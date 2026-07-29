@@ -29,6 +29,10 @@ jobs:
         run: npm ci
       - name: Export Expo web app
         run: npx expo export --platform web
+      # GitHub Pages serves this fallback for direct links such as /plan or
+      # /profile. Expo Router then reads the original URL and renders the page.
+      - name: Add route fallback
+        run: cp dist/index.html dist/404.html
       - name: Upload web site
         uses: actions/upload-pages-artifact@v3
         with:
