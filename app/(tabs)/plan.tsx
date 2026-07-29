@@ -547,7 +547,7 @@ function Primary({
     require("../../assets/icon-toast-hd.png"),
     require("../../assets/icon-salad-hd.png"),
     require("../../assets/icon-noodles-hd.png"),
-    require("../../assets/icon-transit-hd.png"),
+    require("../../assets/icon-transit-clean.png"),
     require("../../assets/icon-smile-hd.png"),
   ];
   const items = [
