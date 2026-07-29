@@ -1,0 +1,27 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useMemo, useState } from 'react';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+
+import { colors, money } from '../components/ui';
+import { useFinanceStore } from '../store/useFinanceStore';
+
+const numeric = (value: string) => value.replace(/[^0-9.]/g, '');
+const dateFromDays = (days: number) => { const date = new Date(); date.setDate(date.getDate() + days); return date.toISOString().slice(0, 10); };
+const daysUntil = (value: string, fallback: number) => { const date = new Date(`${value}T00:00:00`); return Number.isNaN(date.getTime()) ? fallback : Math.max(0, Math.ceil((date.getTime() - Date.now()) / 86400000)); };
+
+export default function IncomeCycleScreen() {
+  const router = useRouter();
+  const { initialBalance, transactions, userName, monthlyIncome, fixedExpenses, nextIncomeDays, updateFinanceSettings } = useFinanceStore();
+  const incomeTransactions = transactions.filter((item) => item.kind === 'income').reduce((sum, item) => sum + item.amount, 0);
+  const expenseTransactions = transactions.filter((item) => item.kind === 'expense').reduce((sum, item) => sum + item.amount, 0);
+  const currentBalance = Math.max(0, initialBalance + incomeTransactions - expenseTransactions);
+  const [date, setDate] = useState(dateFromDays(nextIncomeDays));
+  const [income, setIncome] = useState(String(monthlyIncome));
+  const [fixed, setFixed] = useState(String(fixedExpenses));
+  const days = useMemo(() => daysUntil(date, nextIncomeDays), [date, nextIncomeDays]);
+  const save = () => { updateFinanceSettings({ name: userName, currentBalance, monthlyIncome: Number(income) || 0, fixedExpenses: Number(fixed) || 0, nextIncomeDays: days }); Alert.alert('已保存', '收入周期与计划建议已更新。', [{ text: '好的', onPress: () => router.back() }]); };
+  return <SafeAreaView style={s.safe}><KeyboardAvoidingView style={s.safe} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView contentContainerStyle={s.page} keyboardShouldPersistTaps="handled"><View style={s.head}><Pressable style={s.back} onPress={() => router.back()}><Ionicons name="arrow-back" size={22} color={colors.ink} /></Pressable><Text style={s.title}>收入周期</Text><View style={s.blank} /></View><View style={s.card}><Text style={s.cardTitle}>收入周期</Text><Field label="下次收入日期" value={date} onChange={setDate} placeholder="YYYY-MM-DD" /><View style={s.days}><Ionicons name="time-outline" size={18} color={colors.purple} /><Text style={s.daysText}>距离下一次收入还有 <Text style={s.daysStrong}>{days} 天</Text></Text></View><Field label="每月预计收入（可选）" value={income} onChange={(value) => setIncome(numeric(value))} placeholder="¥ 0" keyboard="decimal-pad" /><Field label="固定必要开销（可选）" value={fixed} onChange={(value) => setFixed(numeric(value))} placeholder="¥ 0" keyboard="decimal-pad" /><View style={s.summary}><Text style={s.summaryLabel}>预计可自由安排</Text><Text style={s.summaryValue}>{money(Math.max(0, (Number(income) || 0) - (Number(fixed) || 0)))}</Text></View></View><Pressable style={s.save} onPress={save}><Ionicons name="checkmark" size={20} color={colors.ink} /><Text style={s.saveText}>保存收入周期</Text></Pressable></ScrollView></KeyboardAvoidingView></SafeAreaView>;
+}
+function Field({ label, value, onChange, placeholder, keyboard }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; keyboard?: 'decimal-pad' }) { return <View style={s.field}><Text style={s.label}>{label}</Text><TextInput value={value} onChangeText={onChange} placeholder={placeholder} placeholderTextColor={colors.muted} keyboardType={keyboard} style={s.input} /></View>; }
+const s = StyleSheet.create({ safe: { flex: 1, backgroundColor: colors.bg }, page: { padding: 20, paddingBottom: 38, gap: 17 }, head: { height: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, back: { height: 44, width: 44, borderRadius: 16, borderWidth: 1.2, borderColor: colors.ink, backgroundColor: colors.paper, alignItems: 'center', justifyContent: 'center' }, blank: { width: 44 }, title: { color: colors.ink, fontSize: 25, fontWeight: '900' }, card: { backgroundColor: colors.paper, borderRadius: 23, borderWidth: 1.2, borderColor: colors.border, padding: 17 }, cardTitle: { color: colors.ink, fontSize: 25, fontWeight: '900' }, field: { marginTop: 19 }, label: { color: colors.ink, fontSize: 14, fontWeight: '800', marginBottom: 8 }, input: { height: 54, borderRadius: 16, borderWidth: 1.1, borderColor: colors.border, backgroundColor: '#FFF', paddingHorizontal: 14, color: colors.ink, fontSize: 16, fontWeight: '700' }, days: { flexDirection: 'row', gap: 7, alignItems: 'center', marginTop: 13 }, daysText: { color: colors.muted, fontSize: 14 }, daysStrong: { color: colors.purple, fontWeight: '900' }, summary: { marginTop: 20, padding: 15, borderRadius: 16, backgroundColor: '#FFF1B7', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, summaryLabel: { color: '#6F5512', fontSize: 14, fontWeight: '800' }, summaryValue: { color: colors.ink, fontSize: 23, fontWeight: '900' }, save: { height: 56, borderRadius: 18, borderWidth: 1.2, borderColor: colors.ink, backgroundColor: colors.yellow, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' }, saveText: { color: colors.ink, fontSize: 16, fontWeight: '900' } });

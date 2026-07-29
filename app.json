@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "一盏余额",
+    "slug": "one-lamp-balance-v2",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/app-icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "onelampbalance",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#5B20C8",
+        "foregroundImage": "./assets/app-icon.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "splash": {
+      "image": "./assets/app-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F7F5EE"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-notifications"
+    ]
+  }
+}
