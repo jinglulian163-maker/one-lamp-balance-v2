@@ -5,40 +5,34 @@ import { Animated, Easing, Image, SafeAreaView, StyleSheet, Text, View } from 'r
 import { colors } from '../components/ui';
 import { useFinanceStore } from '../store/useFinanceStore';
 
-const lamp = require('../assets/lamp-cutout-hd.png');
+// The launch screen gets a smaller image than the in-app illustration so it can
+// render immediately on web and lower-spec phones.
+const lamp = require('../assets/lamp-startup.png');
 
 /** A short branded welcome before routing to the user's next screen. */
 export default function IndexRoute() {
   const router = useRouter();
   const onboardingComplete = useFinanceStore((state) => state.onboardingComplete);
   const opacity = useRef(new Animated.Value(0)).current;
-  const lift = useRef(new Animated.Value(22)).current;
-  const lampScale = useRef(new Animated.Value(0.82)).current;
-  const pulse = useRef(new Animated.Value(0.45)).current;
+  const lift = useRef(new Animated.Value(12)).current;
+  const lampScale = useRef(new Animated.Value(0.94)).current;
 
   useEffect(() => {
-    const pulseAnimation = Animated.loop(Animated.sequence([
-      Animated.timing(pulse, { toValue: 0.85, duration: 860, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      Animated.timing(pulse, { toValue: 0.45, duration: 860, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-    ]));
-
-    pulseAnimation.start();
     Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: 430, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      Animated.timing(lift, { toValue: 0, duration: 580, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      Animated.spring(lampScale, { toValue: 1, friction: 7, tension: 70, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 1, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(lift, { toValue: 0, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(lampScale, { toValue: 1, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
 
     const timer = setTimeout(() => {
-      pulseAnimation.stop();
       router.replace(onboardingComplete ? '/(tabs)' : '/onboarding');
-    }, 1800);
+    }, 1050);
 
-    return () => { clearTimeout(timer); pulseAnimation.stop(); };
-  }, [lampScale, lift, onboardingComplete, opacity, pulse, router]);
+    return () => { clearTimeout(timer); };
+  }, [lampScale, lift, onboardingComplete, opacity, router]);
 
   return <SafeAreaView style={s.safe}>
-    <Animated.View style={[s.light, { opacity: pulse, transform: [{ scale: pulse.interpolate({ inputRange: [0.45, 0.85], outputRange: [0.92, 1.08] }) }] }]} />
+    <View style={s.light} />
     <Animated.View style={[s.content, { opacity, transform: [{ translateY: lift }] }]}>
       <View style={s.lampStage}><Animated.View style={{ transform: [{ scale: lampScale }] }}><Image source={lamp} style={s.lamp} resizeMode="contain" /></Animated.View></View>
       <Text style={s.name}>一盏余额</Text>
