@@ -9,6 +9,10 @@ npm install
 npx expo start -c
 ```
 
+## 网页版
+
+推送到 `master` 后，GitHub Actions 会自动构建并发布网页版本到 GitHub Pages。
+
 ## 图像使用
 
 - UI 最终参考图：仅用于页面布局、颜色、间距和卡片层级的还原，不会作为页面背景使用。
