@@ -37,7 +37,6 @@ export default function IndexRoute() {
       <View style={s.lampStage}><Animated.View style={{ transform: [{ scale: lampScale }] }}><Image source={lamp} style={s.lamp} resizeMode="contain" /></Animated.View></View>
       <Text style={s.name}>一盏余额</Text>
       <Text style={s.copy}>用一盏灯，看见还剩多少。</Text>
-      <View style={s.dots}><View style={[s.dot, s.dotOn]} /><View style={s.dot} /><View style={s.dot} /><View style={s.dot} /></View>
     </Animated.View>
   </SafeAreaView>;
 }
@@ -50,7 +49,4 @@ const s = StyleSheet.create({
   lamp: { width: 185, height: 220 },
   name: { marginTop: 28, color: colors.ink, fontSize: 31, fontWeight: '900', letterSpacing: -0.6 },
   copy: { marginTop: 9, color: colors.muted, fontSize: 15, fontWeight: '600' },
-  dots: { flexDirection: 'row', gap: 8, marginTop: 33 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#D7D2C7' },
-  dotOn: { width: 23, backgroundColor: colors.yellow },
 });
