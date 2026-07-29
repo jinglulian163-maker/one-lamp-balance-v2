@@ -26,7 +26,7 @@ export function Lamp({ level }: { level: 1 | 2 | 3 | 4 }) {
     <View style={[styles.haloFar, { opacity: haloOpacity }]} />
     <View style={[styles.haloNear, { opacity: haloOpacity }]} />
     <Image
-      source={require('../assets/lamp-cutout-hd.png')}
+      source={require('../assets/lamp-startup.png')}
       accessibilityLabel="余额亮度台灯"
       fadeDuration={0}
       style={[styles.lampImage, { opacity: brightness }]}
