@@ -7,10 +7,10 @@ import { BottomNav, Card, colors, money, Section } from '../../components/ui';
 import { useFinanceStore } from '../../store/useFinanceStore';
 
 const collectionArt = [
-  require('../../assets/generated-collection/collection-camera-v3-smaller.png'),
-  require('../../assets/generated-collection/collection-trip-v2.png'),
-  require('../../assets/generated-collection/collection-concert-v2.png'),
-  require('../../assets/generated-collection/collection-books-v2.png'),
+  require('../../assets/generated-collection/collection-camera-v3-smaller-mobile.png'),
+  require('../../assets/generated-collection/collection-trip-v2-mobile.png'),
+  require('../../assets/generated-collection/collection-concert-v2-mobile.png'),
+  require('../../assets/generated-collection/collection-books-v2-mobile.png'),
 ] as const;
 const settingArt = [
   require('../../assets/extracted-settings-cards-hd/setting-calendar-card-hd.png'),
