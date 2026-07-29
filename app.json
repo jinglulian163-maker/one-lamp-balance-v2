@@ -7,6 +7,9 @@
     "icon": "./assets/app-icon.png",
     "userInterfaceStyle": "light",
     "scheme": "onelampbalance",
+    "experiments": {
+      "baseUrl": "/one-lamp-balance-v2"
+    },
     "ios": {
       "supportsTablet": true
     },
