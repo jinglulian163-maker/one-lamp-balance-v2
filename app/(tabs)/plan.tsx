@@ -891,7 +891,7 @@ const s = StyleSheet.create({
   budgets: { flexDirection: "row", marginTop: 16 },
   budget: { flex: 1, alignItems: "center" },
   budgetImage: { height: 35, width: 35, resizeMode: "contain" },
-  transitBudgetImage: { height: 52, width: 52, marginLeft: -16, marginTop: -10, marginBottom: 7 },
+  transitBudgetImage: { height: 52, width: 52, marginLeft: -16, marginTop: -7, marginBottom: 4 },
   budgetLabel: { color: colors.muted, fontSize: 10, marginTop: 5 },
   budgetVal: {
     color: colors.ink,
