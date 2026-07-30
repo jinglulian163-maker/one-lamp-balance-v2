@@ -17,6 +17,7 @@ import {
 import { BottomNav, Card, colors, money, Section } from "../../components/ui";
 import { useFinanceStore } from "../../store/useFinanceStore";
 import { SavingGoal } from "../../types/finance";
+import { daysUntilIncome } from "../../utils/date";
 
 const pad = 20;
 export default function Plan() {
@@ -527,7 +528,7 @@ function Primary({
   goal: SavingGoal;
   onDeposit: () => void;
 }) {
-  const { initialBalance, nextIncomeDays, transactions } = useFinanceStore();
+  const { initialBalance, nextIncomeDays, nextIncomeDate, transactions } = useFinanceStore();
   const income = transactions
     .filter((item) => item.kind === "income")
     .reduce((sum, item) => sum + item.amount, 0);
@@ -536,13 +537,16 @@ function Primary({
     .reduce((sum, item) => sum + item.amount, 0);
   const current = Math.max(0, initialBalance + income - expense);
   const usable = Math.max(0, current - goal.monthlyContribution);
-  const days = Math.max(1, nextIncomeDays);
+  const days = Math.max(1, daysUntilIncome(nextIncomeDate, nextIncomeDays));
   const daily = Math.floor(usable / days);
   const breakfast = Math.floor(daily * 0.14);
   const lunch = Math.floor(daily * 0.25);
   const dinner = Math.floor(daily * 0.25);
   const transport = Math.floor(daily * 0.11);
   const fun = Math.max(0, daily - breakfast - lunch - dinner - transport);
+  const monthsToComplete = goal.monthlyContribution > 0
+    ? Math.max(1, Math.ceil(Math.max(0, goal.targetAmount - goal.savedAmount) / goal.monthlyContribution))
+    : null;
   const budgetIcons = [
     require("../../assets/icon-toast-hd.png"),
     require("../../assets/icon-salad-hd.png"),
@@ -571,8 +575,8 @@ function Primary({
           </View>
           <View style={s.line} />
           <View style={s.metrics}>
-            <Metric label="预计完成" value="4 个月后" />
-            <Metric label="每月需存" value={money(goal.monthlyContribution)} />
+            <Metric label="预计完成" value={monthsToComplete ? `${monthsToComplete} 个月后` : '待设收入周期'} />
+            <Metric label="每月建议存入" value={money(goal.monthlyContribution)} />
           </View>
           <Pressable style={s.deposit} onPress={onDeposit}>
             <Text style={s.btnText}>＋ 存入目标</Text>

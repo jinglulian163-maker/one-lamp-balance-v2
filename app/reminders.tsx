@@ -5,16 +5,18 @@ import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Switch, Text, T
 import { colors } from '../components/ui';
 import { useFinanceStore } from '../store/useFinanceStore';
 import { sendReminderTest, syncReminderNotifications } from '../utils/notifications';
+import { daysUntilIncome } from '../utils/date';
 
 export default function RemindersScreen() {
   const router = useRouter();
   const reminders = useFinanceStore((state) => state.reminders);
   const nextIncomeDays = useFinanceStore((state) => state.nextIncomeDays);
+  const nextIncomeDate = useFinanceStore((state) => state.nextIncomeDate);
   const updateReminders = useFinanceStore((state) => state.updateReminders);
   const validTime = /^([01]\d|2[0-3]):[0-5]\d$/.test(reminders.time);
 
   const sync = async (next = reminders, showResult = false) => {
-    const result = await syncReminderNotifications({ ...next, nextIncomeDays });
+    const result = await syncReminderNotifications({ ...next, nextIncomeDays: daysUntilIncome(nextIncomeDate, nextIncomeDays) });
     if (!showResult) return;
     if (result === 'scheduled') Alert.alert('提醒已更新', `已按 ${next.time} 安排你的提醒。`);
     if (result === 'permission-denied') Alert.alert('需要通知权限', '请在手机系统设置中允许“一盏余额”发送通知。');

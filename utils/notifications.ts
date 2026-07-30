@@ -14,6 +14,39 @@ type SyncRemindersInput = ReminderPreferences & { nextIncomeDays: number };
 export type ReminderSyncResult = 'scheduled' | 'permission-denied' | 'unsupported';
 
 const channelId = 'one-lamp-reminders';
+const webTimers: Array<ReturnType<typeof setTimeout>> = [];
+
+const browserNotification = () =>
+  typeof globalThis !== 'undefined' && 'Notification' in globalThis
+    ? (globalThis as typeof globalThis & { Notification?: typeof Notification }).Notification
+    : undefined;
+
+async function requestWebPermission() {
+  const NotificationApi = browserNotification();
+  if (!NotificationApi) return false;
+  const permission = NotificationApi.permission === 'default'
+    ? await NotificationApi.requestPermission()
+    : NotificationApi.permission;
+  return permission === 'granted';
+}
+
+function clearWebTimers() {
+  webTimers.splice(0).forEach((timer) => clearTimeout(timer));
+}
+
+function scheduleWeb(title: string, body: string, date: Date) {
+  const NotificationApi = browserNotification();
+  if (!NotificationApi) return;
+  const delay = Math.max(0, date.getTime() - Date.now());
+  webTimers.push(setTimeout(() => new NotificationApi(title, { body, icon: '/one-lamp-balance-v2/pwa-icon-192.png' }), delay));
+}
+
+function nextTime(hour: number, minute: number) {
+  const date = new Date();
+  date.setHours(hour, minute, 0, 0);
+  if (date.getTime() <= Date.now()) date.setDate(date.getDate() + 1);
+  return date;
+}
 
 if (Platform.OS !== 'web') {
   Notifications.setNotificationHandler({
@@ -55,7 +88,29 @@ async function schedule(title: string, body: string, trigger: Notifications.Sche
 }
 
 export async function syncReminderNotifications(input: SyncRemindersInput): Promise<ReminderSyncResult> {
-  if (Platform.OS === 'web') return 'unsupported';
+  if (Platform.OS === 'web') {
+    if (!(await requestWebPermission())) return 'permission-denied';
+    clearWebTimers();
+    const { hour, minute } = parseTime(input.time);
+    if (input.dailyRecord) scheduleWeb('一盏余额', '今天的钱，要不要记一下？', nextTime(hour, minute));
+    if (input.goalDeposit) {
+      const date = nextTime(hour, minute);
+      date.setDate(date.getDate() + ((6 - date.getDay() + 7) % 7));
+      scheduleWeb('给目标留一点', '为正在实现的生活，存下一点吧。', date);
+    }
+    if (input.weeklyReview) {
+      const date = nextTime(hour, minute);
+      date.setDate(date.getDate() + ((7 - date.getDay()) % 7));
+      scheduleWeb('这一周的光', '看看这周为自己留下了多少。', date);
+    }
+    if (input.payDay && input.nextIncomeDays > 0) {
+      const date = new Date();
+      date.setDate(date.getDate() + input.nextIncomeDays);
+      date.setHours(9, 0, 0, 0);
+      scheduleWeb('收入日到了', '收入到账后，记得点亮这盏灯。', date);
+    }
+    return 'scheduled';
+  }
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(channelId, {
@@ -116,7 +171,13 @@ export async function syncReminderNotifications(input: SyncRemindersInput): Prom
 }
 
 export async function sendReminderTest(): Promise<ReminderSyncResult> {
-  if (Platform.OS === 'web') return 'unsupported';
+  if (Platform.OS === 'web') {
+    if (!(await requestWebPermission())) return 'permission-denied';
+    const NotificationApi = browserNotification();
+    if (!NotificationApi) return 'unsupported';
+    new NotificationApi('一盏余额', { body: '这是一条测试提醒。你的灯会陪你看见还剩多少。', icon: '/one-lamp-balance-v2/pwa-icon-192.png' });
+    return 'scheduled';
+  }
   if (!(await requestPermission())) return 'permission-denied';
   await Notifications.scheduleNotificationAsync({
     content: { title: '一盏余额', body: '这是一条测试提醒。你的灯会陪你看见还剩多少。' },

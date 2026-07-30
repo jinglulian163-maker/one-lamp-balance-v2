@@ -5,9 +5,10 @@ import { Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput
 import { BottomNav, Card, colors, Lamp, money, Section } from '../../components/ui';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { TransactionKind } from '../../types/finance';
+import { daysUntilIncome } from '../../utils/date';
 
 export default function Home() {
-  const { userName, initialBalance, referenceBalance, nextIncomeDays, transactions, addTransaction, incomeCategories, expenseCategories } = useFinanceStore();
+  const { userName, initialBalance, referenceBalance, nextIncomeDays, nextIncomeDate, transactions, addTransaction, incomeCategories, expenseCategories } = useFinanceStore();
   const [kind, setKind] = useState<TransactionKind | null>(null);
   const [amount, setAmount] = useState('');
   const [title, setTitle] = useState('');
@@ -16,6 +17,7 @@ export default function Home() {
   const income = useMemo(() => transactions.filter((item) => item.kind === 'income').reduce((sum, item) => sum + item.amount, 0), [transactions]);
   const expense = useMemo(() => transactions.filter((item) => item.kind === 'expense').reduce((sum, item) => sum + item.amount, 0), [transactions]);
   const balance = Math.max(0, initialBalance + income - expense);
+  const daysToIncome = daysUntilIncome(nextIncomeDate, nextIncomeDays);
   const ratio = balance / Math.max(referenceBalance, 1);
   const level: 1 | 2 | 3 | 4 = ratio >= .75 ? 4 : ratio >= .5 ? 3 : ratio >= .25 ? 2 : 1;
   const categories = kind === 'income' ? incomeCategories : expenseCategories;
@@ -55,7 +57,7 @@ export default function Home() {
           <View style={s.sep} />
           <Stat title="本月支出" value={money(expense, 2)} color={colors.red} />
           <View style={s.sep} />
-          <Stat title="距下次收入" value={`${nextIncomeDays} 天`} color={colors.purple} />
+          <Stat title="距下次收入" value={`${daysToIncome} 天`} color={colors.purple} />
         </Card>
 
         <View style={s.actions}>

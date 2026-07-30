@@ -34,6 +34,7 @@ export default function Onboarding() {
       monthlyIncome: Number(income) || 0,
       fixedExpenses: Number(fixedExpenses) || 0,
       nextIncomeDays,
+      nextIncomeDate,
       goalTitle: withGoal ? goalTitle : undefined,
       goalAmount: withGoal ? Number(goalAmount) || undefined : undefined,
     });

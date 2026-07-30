@@ -12,6 +12,32 @@ import {
 
 const id = () => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
+const suggestionForGoal = (amount: number, monthlyFree: number) => {
+  const fourMonthPlan = Math.ceil(Math.max(0, amount) / 4);
+  return monthlyFree > 0 ? Math.min(amount, Math.max(fourMonthPlan, Math.round(monthlyFree * 0.6))) : fourMonthPlan;
+};
+
+const allocateGoalContributions = (goals: SavingGoal[], monthlyIncome: number, fixedExpenses: number) => {
+  const available = Math.max(0, monthlyIncome - fixedExpenses);
+  const primary = goals.find((goal) => goal.priority === 'primary');
+  const ongoing = goals.filter((goal) => goal.priority === 'ongoing');
+  const primarySuggestion = primary
+    ? suggestionForGoal(Math.max(0, primary.targetAmount - primary.savedAmount), available)
+    : 0;
+  const ongoingPool = Math.max(0, available - primarySuggestion);
+  const ongoingSuggestion = ongoing.length ? Math.floor(ongoingPool / ongoing.length) : 0;
+
+  return goals.map((goal) => {
+    const remaining = Math.max(0, goal.targetAmount - goal.savedAmount);
+    if (goal.priority === 'waiting') return { ...goal, monthlyContribution: 0 };
+    if (goal.priority === 'primary') {
+      return { ...goal, monthlyContribution: Math.min(remaining, primarySuggestion) };
+    }
+    const fallback = available <= 0 ? Math.ceil(remaining / 4) : ongoingSuggestion;
+    return { ...goal, monthlyContribution: Math.min(remaining, Math.max(0, fallback)) };
+  });
+};
+
 interface FinanceState {
   userName: string;
   initialBalance: number;
@@ -19,6 +45,7 @@ interface FinanceState {
   monthlyIncome: number;
   fixedExpenses: number;
   nextIncomeDays: number;
+  nextIncomeDate: string;
   phoneNumber: string;
   reminders: {
     dailyRecord: boolean;
@@ -60,6 +87,7 @@ interface FinanceState {
     monthlyIncome: number;
     fixedExpenses: number;
     nextIncomeDays: number;
+    nextIncomeDate?: string;
   }) => void;
   bindPhone: (phoneNumber: string) => void;
   signOut: () => void;
@@ -75,6 +103,7 @@ interface FinanceState {
     monthlyIncome: number;
     fixedExpenses: number;
     nextIncomeDays: number;
+    nextIncomeDate?: string;
     goalTitle?: string;
     goalAmount?: number;
   }) => void;
@@ -190,6 +219,7 @@ export const useFinanceStore = create<FinanceState>()(
       monthlyIncome: 5600,
       fixedExpenses: 0,
       nextIncomeDays: 18,
+      nextIncomeDate: '',
       phoneNumber: "",
       reminders: {
         dailyRecord: true,
@@ -283,8 +313,8 @@ export const useFinanceStore = create<FinanceState>()(
           ),
         })),
       addGoal: (title, amount) =>
-        set((state) => ({
-          goals: [
+        set((state) => {
+          const goals: SavingGoal[] = [
             ...state.goals,
             {
               id: id(),
@@ -296,11 +326,12 @@ export const useFinanceStore = create<FinanceState>()(
               priority: "waiting",
               illustration: "camera",
             },
-          ],
-        })),
+          ];
+          return { goals: allocateGoalContributions(goals, state.monthlyIncome, state.fixedExpenses) };
+        }),
       updateGoal: (goalId, update) =>
-        set((state) => ({
-          goals: state.goals.map((goal) =>
+        set((state) => {
+          const goals: SavingGoal[] = state.goals.map((goal) =>
             goal.id === goalId
               ? {
                   ...goal,
@@ -310,20 +341,20 @@ export const useFinanceStore = create<FinanceState>()(
               : update.priority === "primary" && goal.priority === "primary"
                 ? { ...goal, priority: "ongoing" }
                 : goal,
-          ),
-        })),
+          );
+          return { goals: allocateGoalContributions(goals, state.monthlyIncome, state.fixedExpenses) };
+        }),
       deleteGoal: (goalId) =>
         set((state) => {
           const deleted = state.goals.find((goal) => goal.id === goalId);
           const remaining = state.goals.filter((goal) => goal.id !== goalId);
-          return {
-            goals:
+          const goals: SavingGoal[] =
               deleted?.priority === "primary" && remaining.length > 0
                 ? remaining.map((goal, index) =>
                     index === 0 ? { ...goal, priority: "primary" } : goal,
                   )
-                : remaining,
-          };
+                : remaining;
+          return { goals: allocateGoalContributions(goals, state.monthlyIncome, state.fixedExpenses) };
         }),
       depositToGoal: (goalId, amount) =>
         set((state) => {
@@ -352,12 +383,13 @@ export const useFinanceStore = create<FinanceState>()(
 
           if (depositedAmount <= 0) return state;
 
-          return {
-            goals: state.goals.map((item) =>
+          const goals = state.goals.map((item) =>
               item.id === goalId
                 ? { ...item, savedAmount: item.savedAmount + depositedAmount }
                 : item,
-            ),
+            );
+          return {
+            goals: allocateGoalContributions(goals, state.monthlyIncome, state.fixedExpenses),
             initialBalance: state.initialBalance - depositedAmount,
           };
         }),
@@ -375,7 +407,7 @@ export const useFinanceStore = create<FinanceState>()(
                 )
               : remaining;
           return {
-            goals,
+            goals: allocateGoalContributions(goals, state.monthlyIncome, state.fixedExpenses),
             collection: [
               {
                 id: id(),
@@ -390,8 +422,8 @@ export const useFinanceStore = create<FinanceState>()(
           };
         }),
       setPriority: (goalId, priority) =>
-        set((state) => ({
-          goals: state.goals.map((goal) => ({
+        set((state) => {
+          const goals: SavingGoal[] = state.goals.map((goal) => ({
             ...goal,
             priority:
               goal.id === goalId
@@ -399,14 +431,16 @@ export const useFinanceStore = create<FinanceState>()(
                 : priority === "primary" && goal.priority === "primary"
                   ? "ongoing"
                   : goal.priority,
-          })),
-        })),
+          }));
+          return { goals: allocateGoalContributions(goals, state.monthlyIncome, state.fixedExpenses) };
+        }),
       updateFinanceSettings: ({
         name,
         currentBalance,
         monthlyIncome,
         fixedExpenses,
         nextIncomeDays,
+        nextIncomeDate,
       }) =>
         set((state) => {
           const income = state.transactions
@@ -415,6 +449,7 @@ export const useFinanceStore = create<FinanceState>()(
           const expense = state.transactions
             .filter((transaction) => transaction.kind === "expense")
             .reduce((sum, transaction) => sum + transaction.amount, 0);
+          const goals = allocateGoalContributions(state.goals, Math.max(0, monthlyIncome), Math.max(0, fixedExpenses));
           return {
             userName: name.trim() || state.userName,
             // Keep the balance visible on the home page equal to the amount just entered.
@@ -423,6 +458,8 @@ export const useFinanceStore = create<FinanceState>()(
             monthlyIncome: Math.max(0, monthlyIncome),
             fixedExpenses: Math.max(0, fixedExpenses),
             nextIncomeDays: Math.max(0, Math.floor(nextIncomeDays)),
+            nextIncomeDate: nextIncomeDate ?? state.nextIncomeDate,
+            goals,
           };
         }),
       bindPhone: (phoneNumber) => set({ phoneNumber: phoneNumber.trim() }),
@@ -448,6 +485,7 @@ export const useFinanceStore = create<FinanceState>()(
           monthlyIncome: 5600,
           fixedExpenses: 0,
           nextIncomeDays: 18,
+          nextIncomeDate: '',
           transactions: demoTransactions.map((item) => ({ ...item })),
           goals: initialGoals.map((item) => ({ ...item })),
           collection: demoCollection.map((item) => ({ ...item })),
@@ -475,6 +513,7 @@ export const useFinanceStore = create<FinanceState>()(
         monthlyIncome,
         fixedExpenses,
         nextIncomeDays,
+        nextIncomeDate,
         goalTitle,
         goalAmount,
       }) =>
@@ -486,7 +525,7 @@ export const useFinanceStore = create<FinanceState>()(
           fixedExpenses,
           nextIncomeDays,
           transactions: [],
-          goals:
+          goals: allocateGoalContributions(
             goalTitle && goalAmount && goalAmount > 0
               ? [
                   {
@@ -501,6 +540,10 @@ export const useFinanceStore = create<FinanceState>()(
                   },
                 ]
               : [],
+            monthlyIncome,
+            fixedExpenses,
+          ),
+          nextIncomeDate: nextIncomeDate ?? '',
           collection: [],
           onboardingComplete: true,
         })),
@@ -508,6 +551,19 @@ export const useFinanceStore = create<FinanceState>()(
     {
       name: "one-lamp-balance-state",
       storage: createJSONStorage(() => AsyncStorage),
+      version: 2,
+      migrate: (persistedState) => {
+        const state = persistedState as FinanceState;
+        return {
+          ...state,
+          nextIncomeDate: state.nextIncomeDate ?? '',
+          goals: allocateGoalContributions(
+            state.goals ?? [],
+            state.monthlyIncome ?? 0,
+            state.fixedExpenses ?? 0,
+          ),
+        };
+      },
     },
   ),
 );
